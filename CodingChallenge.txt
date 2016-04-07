@@ -1,0 +1,8 @@
+# Coding challenge  #
+We have provided you with a solution to the assessment you have done at home.  We would like to expand on some areas of the solution and solve some additional problems.
+
+1. Patient ID 3 does not get returned because of a bug. (Look at the file PatientInitialiser to see the data). Use a TDD approach to fix the bug. 
+2. Validate the input for the PatientsController endpoint and return an appropriate message to the requester using any method and/or libraries you see fit. Include unit tests for the logic if possible.
+3. Log the information of each request and response using any method and/or libraries you see fit.
+
+We appreciate there are many possible solutions to the above problems so you need to be able to provide a balanced solution based on the time you will be given.
