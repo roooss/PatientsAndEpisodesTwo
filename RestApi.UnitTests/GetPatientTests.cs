@@ -29,13 +29,28 @@ namespace RestApi.UnitTests
             get
             {
                 return new Patient
-                    {
-                        DateOfBirth = new DateTime(1972, 10, 27),
-                        FirstName = "Millicent",
-                        PatientId = 1,
-                        LastName = "Hammond",
-                        NhsNumber = "1111111111"
-                    };
+                {
+                    DateOfBirth = new DateTime(1972, 10, 27),
+                    FirstName = "Millicent",
+                    PatientId = 1,
+                    LastName = "Hammond",
+                    NhsNumber = "1111111111"
+                };
+            }
+        }
+
+        private Patient Patient3
+        {
+            get
+            {
+                return new Patient
+                {
+                    DateOfBirth = new DateTime(1972, 10, 27),
+                    FirstName = "Millicent",
+                    PatientId = 3,
+                    LastName = "Hammond",
+                    NhsNumber = "1111111111"
+                };
             }
         }
 
@@ -54,17 +69,20 @@ namespace RestApi.UnitTests
             }
         }
 
-        [TestCase(1, false, TestName="If the endpoint is called with the ID of a patient that exists, status code 200 is returned along with the patient.")]
+        [TestCase(1, false, TestName="If the endpoint is called with the ID of a patient (1) that exists, status code 200 is returned along with the patient.")]
         [TestCase(2, true, TestName="If the endpoint is called with the ID of a patient that does not exist, status code 404 is returned.")]
+        [TestCase(3, false, TestName = "If the endpoint is called with the ID of a patient (3) that exists, status code 200 is returned along with the patient.")]
         public void IfThePatientExistsItIsReturned(int patientId, bool shouldError)
         {
             var patient1 = Patient1;
+            var patient3 = Patient3;
             var patient1Episode = Patient1Episode;
 
             using (var scope = DiContainerScope)
             {
                 var databaseContext = scope.Resolve<IDatabaseContext>();
                 databaseContext.Patients.Add(patient1);
+                databaseContext.Patients.Add(patient3);
                 databaseContext.Episodes.Add(patient1Episode);
                 var controller = scope.Resolve<PatientsController>();
 
@@ -93,7 +111,14 @@ namespace RestApi.UnitTests
                     Assert.Fail("An HttpResponseException was expected but not thrown.");
                 }
 
-                Assert.AreEqual(patient1, returnedPatient, "The patient returned by the API was not the correct one.");
+                var patientToAssertWith = patient1;
+
+                if (patientId == 3)
+                {
+                    patientToAssertWith = patient3;
+                }
+
+                Assert.AreEqual(patientToAssertWith, returnedPatient, "The patient returned by the API was not the correct one.");
             }
         }
     }

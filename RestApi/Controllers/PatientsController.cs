@@ -20,7 +20,8 @@ namespace RestApi.Controllers
         {
             var patientsAndEpisodes =
                 from p in _databaseContext.Patients
-                join e in _databaseContext.Episodes on p.PatientId equals e.PatientId
+                join e in _databaseContext.Episodes on p.PatientId equals e.PatientId into patientEpisodes
+                from e in patientEpisodes.DefaultIfEmpty()
                 where p.PatientId == patientId
                 select new {p, e};
 
