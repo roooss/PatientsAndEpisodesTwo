@@ -16,23 +16,53 @@ namespace RestApi.Controllers
         }
 
         [HttpGet]
-        public Patient Get(int patientId)
+        public PatientResult Get(string patientId)
         {
+            PatientResult result = new PatientResult();
+            result.IsSuccessful = false;
+            result.ResultStatus = ResultStatusEnum.NotFound;
+
+            int patientIdInt = 0;
+
+            if (!int.TryParse(patientId.Trim(), out patientIdInt))
+            {
+                result.Message = "PatientId: " + patientId + " - is not a valid number";
+                result.ResultStatus = ResultStatusEnum.NotANumber;
+                return result;
+            }
+
+            if (patientIdInt <= 0)
+            {
+                result.Message = "PatientId: " + patientId + " - is not greater than zero";
+                result.ResultStatus = ResultStatusEnum.ZeroOrLess;
+
+                return result;
+            }
+
             var patientsAndEpisodes =
                 from p in _databaseContext.Patients
                 join e in _databaseContext.Episodes on p.PatientId equals e.PatientId into patientEpisodes
                 from e in patientEpisodes.DefaultIfEmpty()
-                where p.PatientId == patientId
+                where p.PatientId == patientIdInt
                 select new {p, e};
 
             if (patientsAndEpisodes.Any())
             {
                 var first = patientsAndEpisodes.First().p;
                 first.Episodes = patientsAndEpisodes.Select(x => x.e).ToArray();
-                return first;
+
+                result.IsSuccessful = true;
+                result.Message = "Patient " + patientId + " found.";
+                result.ResultStatus = ResultStatusEnum.Successful;
+
+                result.Patient = first;
+            }
+            else
+            {
+                result.Message = "Patient " + patientId + " not found in our records.";
             }
 
-            throw new HttpResponseException(HttpStatusCode.NotFound);
+            return result;
         }
     }
 }

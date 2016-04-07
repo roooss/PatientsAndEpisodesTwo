@@ -69,10 +69,13 @@ namespace RestApi.UnitTests
             }
         }
 
-        [TestCase(1, false, TestName="If the endpoint is called with the ID of a patient (1) that exists, status code 200 is returned along with the patient.")]
-        [TestCase(2, true, TestName="If the endpoint is called with the ID of a patient that does not exist, status code 404 is returned.")]
-        [TestCase(3, false, TestName = "If the endpoint is called with the ID of a patient (3) that exists, status code 200 is returned along with the patient.")]
-        public void IfThePatientExistsItIsReturned(int patientId, bool shouldError)
+        [TestCase("1", false, TestName = "If the endpoint is called with the ID (1) of a patient that exists, status code 200 is returned along with the successful patient result.")]
+        [TestCase("2", true, TestName = "If the endpoint is called with the ID (2) of a patient that does not exist, status code 200 is returned alon with an unsuccessful patient result (Not Found).")]
+        [TestCase("a", true, TestName = "If the endpoint is called with the ID (a) of a patient that does not exist, status code 200 is returned alon with an unsuccessful patient result (Not A Number).")]
+        [TestCase("-1", true, TestName = "If the endpoint is called with the ID (-1) of a patient that does not exist, status code 200 is returned alon with an unsuccessful patient result (Zero Or Less).")]
+        [TestCase("0", true, TestName = "If the endpoint is called with the ID (0) of a patient that does not exist, status code 200 is returned alon with an unsuccessful patient result (Zero Or Less).")]
+        [TestCase("3", false, TestName = "If the endpoint is called with the ID (3) of a patient that exists, status code 200 is returned along with the successful patient result")]
+        public void IfThePatientExistsItIsReturned(string patientId, bool shouldError)
         {
             var patient1 = Patient1;
             var patient3 = Patient3;
@@ -86,39 +89,54 @@ namespace RestApi.UnitTests
                 databaseContext.Episodes.Add(patient1Episode);
                 var controller = scope.Resolve<PatientsController>();
 
-                Patient returnedPatient = null;
+                PatientResult returnedPatient = null;
 
                 try
                 {
                     returnedPatient = controller.Get(patientId);
                 }
-                catch (HttpResponseException httpResponseException)
+                catch (HttpResponseException)
                 {
-                    if (shouldError)
-                    {
-                        Assert.AreEqual(HttpStatusCode.NotFound, httpResponseException.Response.StatusCode,
-                                        "An incorrect status code was returned.");
-                        return;
-                    }
-                    else
-                    {
-                        Assert.Fail("An HttpResponseException was thrown when it should not have been.");    
-                    }
+                    Assert.Fail("An HttpResponseException was thrown when it should not have been.");
+
                 }
 
                 if (shouldError)
                 {
-                    Assert.Fail("An HttpResponseException was expected but not thrown.");
+                    Assert.IsFalse(returnedPatient.IsSuccessful);
+
+                    switch (patientId)
+                    {
+                        case "2":
+                            Assert.AreEqual((int)ResultStatusEnum.NotFound, (int)returnedPatient.ResultStatus, "Expexted not found status (1).");
+                            break;
+                        case "a":
+                            Assert.AreEqual((int)ResultStatusEnum.NotANumber, (int)returnedPatient.ResultStatus, "Expexted not a number status (2).");
+                            break;
+                        case "0":
+                            Assert.AreEqual((int)ResultStatusEnum.ZeroOrLess, (int)returnedPatient.ResultStatus, "Expexted zero or less status (3).");
+                            break;
+                        case "-1":
+                            Assert.AreEqual((int)ResultStatusEnum.ZeroOrLess, (int)returnedPatient.ResultStatus, "Expexted zero or less status (3).");
+                            break;
+                        default:
+                            Assert.Fail("Expected a negative status, one was not returned.");
+                            break;
+                    }
+
+                    return;
                 }
 
                 var patientToAssertWith = patient1;
 
-                if (patientId == 3)
+                if (patientId.Equals("3"))
                 {
                     patientToAssertWith = patient3;
                 }
 
-                Assert.AreEqual(patientToAssertWith, returnedPatient, "The patient returned by the API was not the correct one.");
+                Assert.IsTrue(returnedPatient.IsSuccessful);
+                Assert.AreEqual((int)ResultStatusEnum.Successful, (int)returnedPatient.ResultStatus, "Expexted successful status (0).");
+                Assert.AreEqual(patientToAssertWith, returnedPatient.Patient, "The patient returned by the API was not the correct one.");
             }
         }
     }
